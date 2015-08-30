@@ -7,6 +7,8 @@ var BLOCK_WIDTH = 100,
     FIELD_COLS = 5, // as hard-coded in engine.js
     FIELD_ROWS = 6;
 
+var pause = false;
+
 // Enemies our player must avoid
 var Enemy = function(row, speed) {
     // Variables applied to each of our instances go here,
@@ -28,9 +30,11 @@ Enemy.prototype.update = function(dt) {
     // You should multiply any movement by the dt parameter
     // which will ensure the game runs at the same speed for
     // all computers.
-    this.x += this.speed * dt;
-    if (this.x >= BLOCK_WIDTH * FIELD_COLS) {
-        this._reset();
+    if (!pause) {
+        this.x += this.speed * dt;
+        if (this.x >= BLOCK_WIDTH * FIELD_COLS) {
+            this._reset();
+        }
     }
 
 }
@@ -43,6 +47,7 @@ Enemy.prototype.render = function() {
 // Reset the enemy to the beginning of the line.
 Enemy.prototype._reset = function () {
     this.x = ENEMY_OFFSET_X - BLOCK_WIDTH;
+    this.speed = 100 + Math.floor(Math.random() * 300);
 }
 
 // Now write your own player class
@@ -77,22 +82,35 @@ Player.prototype.handleInput = function (input) {
             if (this.y - BLOCK_HEIGHT >= PLAYER_OFFSET_Y) {
                 this.y -= BLOCK_HEIGHT;
             }
+            pause = false;
             break;
         case 'down':
             if (this.y + BLOCK_HEIGHT <= BLOCK_HEIGHT * (FIELD_ROWS - 1)) {
                 this.y += BLOCK_HEIGHT;
             }
+            pause = false;
             break;
         case 'left':
             if (this.x - BLOCK_WIDTH >= PLAYER_OFFSET_X) {
                 this.x -= BLOCK_WIDTH;
             }
+            pause = false;
             break;
         case 'right':
             if (this.x + BLOCK_WIDTH <= BLOCK_WIDTH * (FIELD_COLS - 1)) {
                 this.x += BLOCK_WIDTH;
             }
+            pause = false;
             break;
+        case 'space':
+            if (pause) {
+                pause = false;
+            } else {
+                pause = true;
+            }
+            break;
+        default:
+            console.log(input);
     }
 };
 
@@ -101,9 +119,9 @@ Player.prototype.handleInput = function (input) {
 // Place all enemy objects in an array called allEnemies
 // Place the player object in a variable called player
 var allEnemies = [
-    new Enemy(1, 300),
-    new Enemy(2, 100), 
-    new Enemy(3, 200)];
+    new Enemy(1, 100 + Math.floor(Math.random() * 300)),
+    new Enemy(2, 100 + Math.floor(Math.random() * 300)), 
+    new Enemy(3, 100 + Math.floor(Math.random() * 300))];
 var player = new Player();
 
 
@@ -114,7 +132,8 @@ document.addEventListener('keyup', function(e) {
         37: 'left',
         38: 'up',
         39: 'right',
-        40: 'down'
+        40: 'down',
+        32: 'space'
     };
 
     player.handleInput(allowedKeys[e.keyCode]);
