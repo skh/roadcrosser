@@ -2,17 +2,24 @@ var BLOCK_WIDTH = 100,
     BLOCK_HEIGHT = 83,
     PLAYER_OFFSET_X = 0,
     PLAYER_OFFSET_Y = -35,
+    ENEMY_OFFSET_X = 0;
+    ENEMY_OFFSET_Y = -20;
     FIELD_COLS = 5, // as hard-coded in engine.js
     FIELD_ROWS = 6;
 
 // Enemies our player must avoid
-var Enemy = function() {
+var Enemy = function(row, speed) {
     // Variables applied to each of our instances go here,
     // we've provided one for you to get started
 
     // The image/sprite for our enemies, this uses
     // a helper we've provided to easily load images
     this.sprite = 'images/enemy-bug.png';
+    // create them off-screen
+    this.x = ENEMY_OFFSET_X - BLOCK_WIDTH;
+    this.y = ENEMY_OFFSET_Y + BLOCK_HEIGHT * row; 
+    this.speed = speed;
+    console.log("enemy created with speed " + speed);
 }
 
 // Update the enemy's position, required method for game
@@ -21,11 +28,21 @@ Enemy.prototype.update = function(dt) {
     // You should multiply any movement by the dt parameter
     // which will ensure the game runs at the same speed for
     // all computers.
+    this.x += this.speed * dt;
+    if (this.x >= BLOCK_WIDTH * FIELD_COLS) {
+        this._reset();
+    }
+
 }
 
 // Draw the enemy on the screen, required method for game
 Enemy.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+}
+
+// Reset the enemy to the beginning of the line.
+Enemy.prototype._reset = function () {
+    this.x = ENEMY_OFFSET_X - BLOCK_WIDTH;
 }
 
 // Now write your own player class
@@ -83,7 +100,10 @@ Player.prototype.handleInput = function (input) {
 // Now instantiate your objects.
 // Place all enemy objects in an array called allEnemies
 // Place the player object in a variable called player
-var allEnemies = [];
+var allEnemies = [
+    new Enemy(1, 300),
+    new Enemy(2, 100), 
+    new Enemy(3, 200)];
 var player = new Player();
 
 
