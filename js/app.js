@@ -54,7 +54,30 @@ Player.prototype.render = function() {
 };
 
 // handle input
-Player.prototype.handleInput = function () {};
+Player.prototype.handleInput = function (input) {
+    switch (input) {
+        case 'up':
+            if (this.y - BLOCK_HEIGHT >= PLAYER_OFFSET_Y) {
+                this.y -= BLOCK_HEIGHT;
+            }
+            break;
+        case 'down':
+            if (this.y + BLOCK_HEIGHT <= BLOCK_HEIGHT * (FIELD_ROWS - 1)) {
+                this.y += BLOCK_HEIGHT;
+            }
+            break;
+        case 'left':
+            if (this.x - BLOCK_WIDTH >= PLAYER_OFFSET_X) {
+                this.x -= BLOCK_WIDTH;
+            }
+            break;
+        case 'right':
+            if (this.x + BLOCK_WIDTH <= BLOCK_WIDTH * (FIELD_COLS - 1)) {
+                this.x += BLOCK_WIDTH;
+            }
+            break;
+    }
+};
 
 
 // Now instantiate your objects.
