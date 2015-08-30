@@ -1,3 +1,10 @@
+var BLOCK_WIDTH = 100,
+    BLOCK_HEIGHT = 83,
+    PLAYER_OFFSET_X = 0,
+    PLAYER_OFFSET_Y = -35,
+    FIELD_COLS = 5, // as hard-coded in engine.js
+    FIELD_ROWS = 6;
+
 // Enemies our player must avoid
 var Enemy = function() {
     // Variables applied to each of our instances go here,
@@ -26,15 +33,35 @@ Enemy.prototype.render = function() {
 // a handleInput() method.
 
 var Player = function () {
-
+    this.sprite = 'images/char-cat-girl.png';
+    // initial placement on start row and random column
+    var random_x = Math.floor(Math.random() * FIELD_COLS);
+    this.x = PLAYER_OFFSET_X + (BLOCK_WIDTH * random_x);
+    this.y = PLAYER_OFFSET_Y + (BLOCK_HEIGHT * (FIELD_ROWS - 1));
 };
+
+// Update the player's position, required method for game
+// Parameter: dt, a time delta between ticks
+Player.prototype.update = function(dt) {
+    // You should multiply any movement by the dt parameter
+    // which will ensure the game runs at the same speed for
+    // all computers.
+};
+
+// Draw the player on the screen, required method for game
+Player.prototype.render = function() {
+    ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+};
+
+// handle input
+Player.prototype.handleInput = function () {};
 
 
 // Now instantiate your objects.
 // Place all enemy objects in an array called allEnemies
 // Place the player object in a variable called player
 var allEnemies = [];
-var player = Player();
+var player = new Player();
 
 
 // This listens for key presses and sends the keys to your
