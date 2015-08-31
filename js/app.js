@@ -42,15 +42,39 @@ var Overlay = function () {};
 // call render() to show it
 Overlay.prototype.render = function () {
     if (game.state === 'pause') {
-        ctx.globalAlpha = 0.5;
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, 505, 606);
-        ctx.globalAlpha = 1;
+        this._dim();
     }
-    ctx.globalAlpha = 0.3;
+    this._drawStatus();
+};
+
+Overlay.prototype._dim = function () {
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, 505, 606);
+    ctx.globalAlpha = 1;
+};
+
+// draws the status line at the bottom of the screen, showing
+// the current score and remaining lives. All pixel values
+// hard-coded and found by trial & error
+Overlay.prototype._drawStatus = function () {
+    var status = "L:";
+    status += game.lives;
+    status += " | S:";
+    status += game.current_score;
+
+    var help = "<space> to pause";
+
+    ctx.globalAlpha = 0.7;
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 560, 505, 26);
     ctx.globalAlpha = 1;
+
+    ctx.fillStyle = '#00f';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText(status, 20, 578);
+    ctx.fillText(help, 330, 578);
+
 };
 
 // Enemies our player must avoid
