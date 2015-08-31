@@ -5,16 +5,43 @@ var BLOCK_WIDTH = 101,
     ENEMY_OFFSET_X = 0;
     ENEMY_OFFSET_Y = -22;
     FIELD_COLS = 5, // as hard-coded in engine.js
-    FIELD_ROWS = 6;
+    FIELD_ROWS = 6,
+    INITIAL_LIVES = 5;
 
-var pause = false;
+// Game: hold game state
+var Game = function () {
+    this.state = 'run';
+    this.lives = INITIAL_LIVES;
+    this.current_score = 0,
+    this.scores = [];
+};
+
+// handle input
+Game.prototype.handleInput = function (input) {
+    switch (game.state) {
+        case 'pause':
+            switch (input) {
+                case 'space':
+                    game.state = 'run';
+                    break;
+                default:
+                    console.log ('(game) invalid input: ' +  input);
+            }
+            break;
+        case 'run':
+            // when the game is running, the player object
+            // has full control
+            player.handleInput(input);
+            break;
+    }
+};
 
 // Overlay for info areas and menus
 var Overlay = function () {};
 
 // call render() to show it
 Overlay.prototype.render = function () {
-    if (pause) {
+    if (game.state === 'pause') {
         ctx.globalAlpha = 0.5;
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, 505, 606);
@@ -47,7 +74,7 @@ Enemy.prototype.update = function(dt) {
     // You should multiply any movement by the dt parameter
     // which will ensure the game runs at the same speed for
     // all computers.
-    if (!pause) {
+    if (game.state !== 'pause') {
         this.x += this.speed * dt;
         if (this.x >= BLOCK_WIDTH * FIELD_COLS) {
             this._reset();
@@ -132,14 +159,11 @@ Player.prototype.handleInput = function (input) {
             }
             break;
         case 'space':
-            if (pause) {
-                pause = false;
-            } else {
-                pause = true;
-            }
+            // un-pause is handled by game.handleInput()
+            game.state = 'pause';
             break;
         default:
-            console.log(input);
+            console.log("(player) invalid input: " + input);
     }
 };
 
@@ -153,6 +177,7 @@ var allEnemies = [
     new Enemy(3, 100 + Math.floor(Math.random() * 300))];
 var player = new Player();
 var overlay = new Overlay();
+var game = new Game();
 
 // This listens for key presses and sends the keys to your
 // Player.handleInput() method. You don't need to modify this.
@@ -165,5 +190,5 @@ document.addEventListener('keyup', function(e) {
         32: 'space'
     };
 
-    player.handleInput(allowedKeys[e.keyCode]);
+    game.handleInput(allowedKeys[e.keyCode]);
 });
