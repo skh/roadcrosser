@@ -1,3 +1,4 @@
+// Constants
 var BLOCK_WIDTH = 101,
     BLOCK_HEIGHT = 83,
     PLAYER_OFFSET_X = 0,
@@ -6,11 +7,12 @@ var BLOCK_WIDTH = 101,
     ENEMY_OFFSET_Y = -22;
     FIELD_COLS = 5, // as hard-coded in engine.js
     FIELD_ROWS = 6,
-    INITIAL_LIVES = 5;
+    INITIAL_LIVES = 3,
+    POINTS_PER_CROSSING = 5;
 
 // Game: hold game state
 var Game = function () {
-    this.state = 'run';
+    this.state = 'menu';
     this.lives = INITIAL_LIVES;
     this.current_score = 0,
     this.scores = [];
@@ -19,6 +21,28 @@ var Game = function () {
 // handle input
 Game.prototype.handleInput = function (input) {
     switch (game.state) {
+        case 'menu':
+            switch (input) {
+                case 'enter':
+                    game.state = 'run';
+                    break;
+                case 'h':
+                    game.state = 'highscores';
+                    break;
+                default:
+                    console.log('(game) invalid input: ' + input);
+            }
+            break;
+        case 'highscores':
+        case 'gameover':
+            switch (input) {
+                case 'enter':
+                    game.state = 'menu';
+                    break;
+                default:
+                    console.log('(game) invalid input: ' + input);
+            }
+            break;
         case 'pause':
             switch (input) {
                 case 'space':
@@ -41,12 +65,29 @@ var Overlay = function () {};
 
 // call render() to show it
 Overlay.prototype.render = function () {
-    if (game.state === 'pause') {
-        this._dim();
+    switch (game.state) {
+        case 'pause':
+            this._dim();
+            this._drawStatus();
+            break;
+        case 'run':
+            this._drawStatus();
+            break;
+        case 'menu':
+            this._dim();
+            this._drawMenu();
+            break;
+        case 'highscores':
+            this._dim();
+            this._drawHighscores();
+            break;
+        case 'gameover':
+            this._dim();
+            this._drawGameover();
     }
-    this._drawStatus();
 };
 
+// 
 Overlay.prototype._dim = function () {
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = '#fff';
@@ -72,9 +113,40 @@ Overlay.prototype._drawStatus = function () {
 
     ctx.fillStyle = '#00f';
     ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'left';
     ctx.fillText(status, 20, 578);
     ctx.fillText(help, 330, 578);
 
+};
+
+// draws a menu screen
+Overlay.prototype._drawMenu = function () {
+    var menu = "<enter> to start, <h> for highscores";
+
+    ctx.fillStyle = '#00f';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(menu, 250, 250);
+};
+
+// draws highscores screen
+Overlay.prototype._drawHighscores = function () {
+    var help = "<enter> to return to menu";
+
+    ctx.fillStyle = '#00f';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(help, 250, 250);
+};
+
+// draws "game over" screen
+Overlay.prototype._drawGameover = function () {
+    var help = "GAME OVER (<enter> to return to menu)";
+
+    ctx.fillStyle = '#00f';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(help, 250, 250);
 };
 
 // Enemies our player must avoid
@@ -98,7 +170,7 @@ Enemy.prototype.update = function(dt) {
     // You should multiply any movement by the dt parameter
     // which will ensure the game runs at the same speed for
     // all computers.
-    if (game.state !== 'pause') {
+    if (game.state === 'run') {
         this.x += this.speed * dt;
         if (this.x >= BLOCK_WIDTH * FIELD_COLS) {
             this._reset();
@@ -141,7 +213,7 @@ Player.prototype.update = function(dt) {
         var overlap =
             (Math.abs(this.x - allEnemies[e].x)) < 50;
         if (same_row && overlap) {
-            this._reset();
+            this._fail();
             break;
         } 
     }
@@ -157,6 +229,21 @@ Player.prototype._reset = function() {
     var random_x = Math.floor(Math.random() * FIELD_COLS);
     this.x = PLAYER_OFFSET_X + (BLOCK_WIDTH * random_x);
     this.y = PLAYER_OFFSET_Y + (BLOCK_HEIGHT * (FIELD_ROWS - 1));
+};
+
+// called when run over by a bug
+Player.prototype._fail = function () {
+    game.lives--;
+    this._reset();
+    if (game.lives < 0) {
+        game.state = 'gameover';
+    }
+};
+
+// called when water is reached
+Player.prototype.succeed = function () {
+    game.score += POINTS_PER_CROSSING;
+    this._reset();
 };
 
 // handle input
@@ -211,7 +298,9 @@ document.addEventListener('keyup', function(e) {
         38: 'up',
         39: 'right',
         40: 'down',
-        32: 'space'
+        32: 'space',
+        13: 'enter',
+        72: 'h'
     };
 
     game.handleInput(allowedKeys[e.keyCode]);
