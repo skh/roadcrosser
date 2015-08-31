@@ -1,9 +1,9 @@
-var BLOCK_WIDTH = 100,
+var BLOCK_WIDTH = 101,
     BLOCK_HEIGHT = 83,
     PLAYER_OFFSET_X = 0,
     PLAYER_OFFSET_Y = -35,
     ENEMY_OFFSET_X = 0;
-    ENEMY_OFFSET_Y = -20;
+    ENEMY_OFFSET_Y = -22;
     FIELD_COLS = 5, // as hard-coded in engine.js
     FIELD_ROWS = 6;
 
@@ -15,12 +15,15 @@ var Overlay = function () {};
 // call render() to show it
 Overlay.prototype.render = function () {
     if (pause) {
-        var alpha = ctx.globalAlpha;
         ctx.globalAlpha = 0.5;
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, 505, 606);
-        ctx.globalAlpha = alpha;
+        ctx.globalAlpha = 1;
     }
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 560, 505, 26);
+    ctx.globalAlpha = 1;
 };
 
 // Enemies our player must avoid
@@ -79,14 +82,30 @@ var Player = function () {
 // Update the player's position, required method for game
 // Parameter: dt, a time delta between ticks
 Player.prototype.update = function(dt) {
-    // You should multiply any movement by the dt parameter
-    // which will ensure the game runs at the same speed for
-    // all computers.
+    for (var e = 0; e < allEnemies.length; e++) {
+        // same row?
+        var same_row =
+            (this.y - PLAYER_OFFSET_Y == allEnemies[e].y - ENEMY_OFFSET_Y);
+        // overlap?
+        var overlap =
+            (Math.abs(this.x - allEnemies[e].x)) < 50;
+        if (same_row && overlap) {
+            this._reset();
+            break;
+        } 
+    }
 };
 
 // Draw the player on the screen, required method for game
 Player.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+};
+
+// reset the player to the start row
+Player.prototype._reset = function() {
+    var random_x = Math.floor(Math.random() * FIELD_COLS);
+    this.x = PLAYER_OFFSET_X + (BLOCK_WIDTH * random_x);
+    this.y = PLAYER_OFFSET_Y + (BLOCK_HEIGHT * (FIELD_ROWS - 1));
 };
 
 // handle input
