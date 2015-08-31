@@ -9,6 +9,20 @@ var BLOCK_WIDTH = 100,
 
 var pause = false;
 
+// Overlay for info areas and menus
+var Overlay = function () {};
+
+// call render() to show it
+Overlay.prototype.render = function () {
+    if (pause) {
+        var alpha = ctx.globalAlpha;
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 505, 606);
+        ctx.globalAlpha = alpha;
+    }
+};
+
 // Enemies our player must avoid
 var Enemy = function(row, speed) {
     // Variables applied to each of our instances go here,
@@ -82,25 +96,21 @@ Player.prototype.handleInput = function (input) {
             if (this.y - BLOCK_HEIGHT >= PLAYER_OFFSET_Y) {
                 this.y -= BLOCK_HEIGHT;
             }
-            pause = false;
             break;
         case 'down':
             if (this.y + BLOCK_HEIGHT <= BLOCK_HEIGHT * (FIELD_ROWS - 1)) {
                 this.y += BLOCK_HEIGHT;
             }
-            pause = false;
             break;
         case 'left':
             if (this.x - BLOCK_WIDTH >= PLAYER_OFFSET_X) {
                 this.x -= BLOCK_WIDTH;
             }
-            pause = false;
             break;
         case 'right':
             if (this.x + BLOCK_WIDTH <= BLOCK_WIDTH * (FIELD_COLS - 1)) {
                 this.x += BLOCK_WIDTH;
             }
-            pause = false;
             break;
         case 'space':
             if (pause) {
@@ -123,7 +133,7 @@ var allEnemies = [
     new Enemy(2, 100 + Math.floor(Math.random() * 300)), 
     new Enemy(3, 100 + Math.floor(Math.random() * 300))];
 var player = new Player();
-
+var overlay = new Overlay();
 
 // This listens for key presses and sends the keys to your
 // Player.handleInput() method. You don't need to modify this.
