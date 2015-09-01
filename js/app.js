@@ -1,14 +1,20 @@
-// Constants
+/* Constants
+ * All *_OFFSET_* values are used to move item sprites into subjectively better-looking
+ * places
+ */
 var BLOCK_WIDTH = 101,
     BLOCK_HEIGHT = 83,
-    PLAYER_OFFSET_X = 0,
+    PLAYER_OFFSET_X = 0,    
     PLAYER_OFFSET_Y = -35,
     ENEMY_OFFSET_X = 0;
     ENEMY_OFFSET_Y = -22;
+    EXTRA_OFFSET_X = 0;
+    EXTRA_OFFSET_Y = -10;
     FIELD_COLS = 5, // also hard-coded in engine.js
     FIELD_ROWS = 6,
     INITIAL_LIVES = 3,
-    POINTS_PER_CROSSING = 5;
+    POINTS_PER_CROSSING = 50,
+    POINTS_PER_STAR = 50;
 
 // Game: hold game state
 var Game = function () {
@@ -236,6 +242,14 @@ Player.prototype.update = function(dt) {
         } 
     }
 
+    // picked up any extra?
+    for (var e = 0; e < allExtras.length; e++) {
+        if (allExtras[e].row === this.row &&
+            allExtras[e].col === this.col) {
+            allExtras[e].yield();
+        }
+    }
+
 };
 
 // Draw the player on the screen, required method for game
@@ -298,6 +312,105 @@ Player.prototype.handleInput = function (input) {
     }
 };
 
+// Extra items that give lives and points
+// Common functionality for Hearts and Stars:
+// - have a position on the road rows
+// - appear and disappear at random times
+// - reset to new location and display / hide timeout
+
+var Extra = function () {
+    this._init();
+    // if no sprite has been set, this constructor has not been called by
+    // a subclass constructor.
+    // In this case, warn and set a default sprite.
+    if (!this.sprite) {
+        console.log ("Don't use Extra directly, only use subclasses Heart and Star!")
+        this.sprite = 'images/Rock.png';
+    }
+};
+
+Extra.prototype.update = function (dt) {
+    if (game.state === 'run') {
+        this.timeout -= dt * 1000;
+        if (this.timeout < 0) {
+            // if it was already active, reset
+            if (this.isActive) {
+                this._reset();
+            // else, activate
+            } else {
+                this.isActive = true;
+                this._resetTimeout();
+            }
+        }
+    }
+};
+
+Extra.prototype.render = function () {
+    if (this.isActive) {
+        ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+    }
+};
+
+Extra.prototype._init = function () {
+    // extras only appear on road rows, hardcoded for to rows 1-3
+    this.row = Math.floor(Math.random() * 3) + 1;
+    this.col = Math.floor(Math.random() * FIELD_COLS);
+
+    // calculate actual pixel coordinates
+    this.x = EXTRA_OFFSET_X + (BLOCK_WIDTH * this.col);
+    this.y = EXTRA_OFFSET_Y + (BLOCK_HEIGHT * this.row);;
+    
+    // state
+    this.isActive = false;
+
+    // reset timeout
+    this._resetTimeout();
+};
+
+Extra.prototype._reset = function () {
+    this._init();
+}
+
+Extra.prototype._resetTimeout = function () {
+    // timeout before the extra appears or disappears
+    // a random value between 3000 and 7999
+    this.timeout = Math.floor(Math.random() * 5000) + 3;
+};
+
+
+Extra.prototype.yield = function () {
+    console.log("Not implemented in superclass Extra! Only use subclasses Heart or Star.")
+};
+
+// a heart gives one extra life when picked up
+var Heart = function () {
+    this.sprite = 'images/Heart.png';
+    Extra.call(this);
+};
+// set up inheritance
+Heart.prototype = Object.create(Extra.prototype);
+Heart.prototype.constructor = Heart;
+
+// apply bonus and reset heart
+Heart.prototype.yield = function () {
+    game.lives++;
+    this._reset();
+};
+
+// a Star gives POINTS_PER_STAR extra points when picked up
+var Star = function () {
+    this.sprite = 'images/Star.png';
+    Extra.call(this);
+};
+// set up inheritance
+Star.prototype = Object.create(Extra.prototype);
+Star.prototype.constructor = Star;
+
+// apply bonus and reset star
+Star.prototype.yield = function () {
+    game.current_score += POINTS_PER_STAR;
+    this._reset();
+};
 
 // Now instantiate your objects.
 // Place all enemy objects in an array called allEnemies
@@ -306,6 +419,10 @@ var allEnemies = [
     new Enemy(1, 100 + Math.floor(Math.random() * 300)),
     new Enemy(2, 100 + Math.floor(Math.random() * 300)), 
     new Enemy(3, 100 + Math.floor(Math.random() * 300))];
+var allExtras = [
+    new Heart(),
+    new Star()
+];
 var player = new Player();
 var overlay = new Overlay();
 var game = new Game();
