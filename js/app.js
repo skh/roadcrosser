@@ -5,7 +5,7 @@ var BLOCK_WIDTH = 101,
     PLAYER_OFFSET_Y = -35,
     ENEMY_OFFSET_X = 0;
     ENEMY_OFFSET_Y = -22;
-    FIELD_COLS = 5, // as hard-coded in engine.js
+    FIELD_COLS = 5, // also hard-coded in engine.js
     FIELD_ROWS = 6,
     INITIAL_LIVES = 3,
     POINTS_PER_CROSSING = 5;
@@ -15,7 +15,7 @@ var Game = function () {
     this.state = 'menu';
     this.lives = INITIAL_LIVES;
     this.current_score = 0,
-    this.scores = [];
+    this.highscores = [];
 };
 
 // handle input
@@ -157,9 +157,14 @@ var Enemy = function(row, speed) {
     // The image/sprite for our enemies, this uses
     // a helper we've provided to easily load images
     this.sprite = 'images/enemy-bug.png';
-    // create them off-screen
+
+    // remember the row
+    this.row = row;
+
+    // compute actual pixel coordinates
+    // enemies are created off-screen
     this.x = ENEMY_OFFSET_X - BLOCK_WIDTH;
-    this.y = ENEMY_OFFSET_Y + BLOCK_HEIGHT * row; 
+    this.y = ENEMY_OFFSET_Y + BLOCK_HEIGHT * row;
     this.speed = speed;
     console.log("enemy created with speed " + speed);
 }
@@ -167,11 +172,12 @@ var Enemy = function(row, speed) {
 // Update the enemy's position, required method for game
 // Parameter: dt, a time delta between ticks
 Enemy.prototype.update = function(dt) {
-    // You should multiply any movement by the dt parameter
-    // which will ensure the game runs at the same speed for
-    // all computers.
+
     if (game.state === 'run') {
+        // ensures the game runs at the same speed on fast and slow computers
         this.x += this.speed * dt;
+
+        // if the bug runs off the right edge, reset it
         if (this.x >= BLOCK_WIDTH * FIELD_COLS) {
             this._reset();
         }
@@ -195,28 +201,41 @@ Enemy.prototype._reset = function () {
 // a handleInput() method.
 
 var Player = function () {
+    // image hard-coded for now
     this.sprite = 'images/char-cat-girl.png';
-    // initial placement on start row and random column
-    var random_x = Math.floor(Math.random() * FIELD_COLS);
-    this.x = PLAYER_OFFSET_X + (BLOCK_WIDTH * random_x);
-    this.y = PLAYER_OFFSET_Y + (BLOCK_HEIGHT * (FIELD_ROWS - 1));
+
+    // initial placement on random column and start row
+    this.col = Math.floor(Math.random() * FIELD_COLS);
+    this.row = FIELD_ROWS - 1;
+
 };
 
 // Update the player's position, required method for game
 // Parameter: dt, a time delta between ticks
 Player.prototype.update = function(dt) {
+
+    // calculate actual coordinates from col and row
+    this.x = PLAYER_OFFSET_X + (BLOCK_WIDTH * this.col);
+    this.y = PLAYER_OFFSET_Y + (BLOCK_HEIGHT * this.row);
+
+    // reaching the water?
+    if (this.row === 0) {
+        this._succeed();  // win & start over
+    }
+
+    // collision with any enemy?
     for (var e = 0; e < allEnemies.length; e++) {
         // same row?
-        var same_row =
-            (this.y - PLAYER_OFFSET_Y == allEnemies[e].y - ENEMY_OFFSET_Y);
+        var same_row = this.row == allEnemies[e].row;
         // overlap?
         var overlap =
             (Math.abs(this.x - allEnemies[e].x)) < 50;
         if (same_row && overlap) {
-            this._fail();
+            this._fail(); // lose & start over
             break;
         } 
     }
+
 };
 
 // Draw the player on the screen, required method for game
@@ -224,11 +243,11 @@ Player.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
-// reset the player to the start row
+// reset the player to random column and start row
 Player.prototype._reset = function() {
-    var random_x = Math.floor(Math.random() * FIELD_COLS);
-    this.x = PLAYER_OFFSET_X + (BLOCK_WIDTH * random_x);
-    this.y = PLAYER_OFFSET_Y + (BLOCK_HEIGHT * (FIELD_ROWS - 1));
+    var random_x = 
+    this.col = Math.floor(Math.random() * FIELD_COLS);
+    this.row = FIELD_ROWS - 1;
 };
 
 // called when run over by a bug
@@ -241,38 +260,39 @@ Player.prototype._fail = function () {
 };
 
 // called when water is reached
-Player.prototype.succeed = function () {
-    game.score += POINTS_PER_CROSSING;
+Player.prototype._succeed = function () {
+    game.current_score += POINTS_PER_CROSSING;
     this._reset();
 };
 
 // handle input
 Player.prototype.handleInput = function (input) {
     switch (input) {
+        // up, down, right, left: step there
+        // at field's edges, do nothing
         case 'up':
-            if (this.y - BLOCK_HEIGHT >= PLAYER_OFFSET_Y) {
-                this.y -= BLOCK_HEIGHT;
-            }
+            if (this.row > 0) this.row -= 1;
             break;
+
         case 'down':
-            if (this.y + BLOCK_HEIGHT <= BLOCK_HEIGHT * (FIELD_ROWS - 1)) {
-                this.y += BLOCK_HEIGHT;
-            }
+            if (this.row < FIELD_ROWS - 1) this.row += 1;  
             break;
+
         case 'left':
-            if (this.x - BLOCK_WIDTH >= PLAYER_OFFSET_X) {
-                this.x -= BLOCK_WIDTH;
-            }
+            if (this.col > 0) this.col -= 1;
             break;
+
         case 'right':
-            if (this.x + BLOCK_WIDTH <= BLOCK_WIDTH * (FIELD_COLS - 1)) {
-                this.x += BLOCK_WIDTH;
-            }
+            if (this.col < FIELD_COLS - 1) this.col += 1;
             break;
+
+        // space: pause the game
         case 'space':
             // un-pause is handled by game.handleInput()
             game.state = 'pause';
             break;
+
+        // only for debugging, console.log() is fine
         default:
             console.log("(player) invalid input: " + input);
     }
