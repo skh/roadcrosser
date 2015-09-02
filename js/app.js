@@ -12,9 +12,10 @@ var BLOCK_WIDTH = 101,
     EXTRA_OFFSET_Y = -10;
     FIELD_COLS = 5, // also hard-coded in engine.js
     FIELD_ROWS = 6,
-    INITIAL_LIVES = 3,
+    INITIAL_LIVES = 1,
     POINTS_PER_CROSSING = 50,
     POINTS_PER_STAR = 50;
+    NUM_HIGHSCORES = 10;
 
 // Game: hold game state
 var Game = function () {
@@ -259,7 +260,6 @@ Player.prototype.render = function() {
 
 // reset the player to random column and start row
 Player.prototype._reset = function() {
-    var random_x = 
     this.col = Math.floor(Math.random() * FIELD_COLS);
     this.row = FIELD_ROWS - 1;
 };
@@ -270,6 +270,18 @@ Player.prototype._fail = function () {
     this._reset();
     if (game.lives < 0) {
         game.state = 'gameover';
+        console.log("current_score: " + game.current_score);
+        if (game.highscores.length < NUM_HIGHSCORES ||
+            game.current_score > game.highscores[game.highscores.length - 1]) {
+            game.highscores.push(game.current_score);
+            game.highscores = game.highscores.sort();
+            if (game.highscores.length > NUM_HIGHSCORES) {
+                game.highscores = game.highscores.slice(0, NUM_HIGHSCORES);
+            }
+        }
+        console.log(game.highscores);
+        game.current_score = 0;
+        game.lives = INITIAL_LIVES;
     }
 };
 
