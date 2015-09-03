@@ -440,17 +440,12 @@ var overlay = new Overlay();
 var game = new Game();
 
 // This listens for key presses and sends the keys to your
-// Player.handleInput() method. You don't need to modify this.
-document.addEventListener('keyup', function(e) {
-    var allowedKeys = {
-        37: 'left',
-        38: 'up',
-        39: 'right',
-        40: 'down',
-        32: 'space',
-        13: 'enter',
-        72: 'h'
-    };
+// Player.handleInput() method.
+// Using the Kibo library provides a snappier response to keyboard events
+// than registering a plain event listener.
 
-    game.handleInput(allowedKeys[e.keyCode]);
+var k = new Kibo();
+
+k.down('any', function () {
+    game.handleInput(k.lastKey());
 });
