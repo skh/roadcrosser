@@ -26,7 +26,7 @@ var BLOCK_WIDTH = 101,
     INITIAL_LIVES = 1,
     POINTS_PER_CROSSING = 1,
     POINTS_PER_STAR = 3;
-    NUM_HIGHSCORES = 10;
+    NUM_HIGHSCORES = 5;
 
 /* Game -- object to hold game metadata and manage game state
  * 
@@ -45,12 +45,14 @@ var Game = function () {
     this.state = 'menu';
     this.lives = INITIAL_LIVES;
     this.current_score = 0,
-    this.highscores = [];
+    this.highscore_list = [];
 };
 
 /* Game.handleInput() -- handle keyboard input depending on current game state
  *
- * If the game is in the 'run' state, keyboard input is passed
+ * This method gets all key events from the Kibo object which handles keyboard events
+ *
+ * If the game is in the 'run' state, keyboard input is then passed on
  * to Player.handleInput().
  * In all other cases, keyboard input is handled by this method
  * directly. All state transitions happen in wrapper methods. Some of them
@@ -67,7 +69,6 @@ var Game = function () {
  * highscores: 'menu' -> 'highscores'
  *
  */
-
 Game.prototype.handleInput = function (input) {
     switch (this.state) {
         case 'menu':
@@ -109,7 +110,6 @@ Game.prototype.handleInput = function (input) {
     }
 };
 
-
 /* Wrapper methods to handle state transitions:
  * Game.start()
  * Game.pause()
@@ -137,32 +137,34 @@ Game.prototype.resume = function () {
 };
 
 Game.prototype.gameover = function () {
-    var ghl = game.highscores.length;
-    // save score to highscores, if necessary
+    var ghl = game.highscore_list.length;
+    // save score to highscore_list, if necessary
     // score is a highscore if:
+    // score is > 0, and:
     // either highscore list isn't filled yet
-    if (ghl < NUM_HIGHSCORES ||
-        // or score is higher than the lowest score in highscores
-        game.current_score > game.highscores[ghl - 1]) {
+    if (game.current_score > 0 && (ghl < NUM_HIGHSCORES ||
+        // or score is higher than the lowest score in highscore_list
+        game.current_score > game.highscore_list[ghl - 1])) {
 
-        // push to highscores. these are now unsorted.
-        game.highscores.push(game.current_score);
+        // push to highscore_list. this is now unsorted.
+        game.highscore_list.push(game.current_score);
 
         // sort in descending order
-        game.highscores.sort(function (a, b) {
+        game.highscore_list.sort(function (a, b) {
             return b - a;
         });
 
         // remove duplicates from array, by...
-        tmp = game.highscores.filter(function (item, pos) {
+        tmp = game.highscore_list.filter(function (item, pos) {
             // ...only including the first occurence of each item
-            return game.highscores.indexOf(item) == pos;
+            return game.highscore_list.indexOf(item) == pos;
         });
+        game.highscore_list = tmp; 
 
-        game.highscores = tmp; 
-        ghl = game.highscores.length;
+        // limit highscore list to NUM_HIGHSCORES
+        ghl = game.highscore_list.length;
         if (ghl > NUM_HIGHSCORES) {
-            game.highscores = game.highscores.slice(0, NUM_HIGHSCORES);
+            game.highscore_list = game.highscore_list.slice(0, NUM_HIGHSCORES);
         }
     }
     
@@ -178,11 +180,22 @@ Game.prototype.highscores = function () {
     this.state = 'highscores'
 };
 
-
-// Overlay for info areas and menus
+/* Overlay -- object for drawing functionality
+ *
+ * This object contains all methods to draw menu screens and other information
+ * in an overly over the game field.
+ * 
+ * It is treated like the game objects:  its update() and render() methods 
+ * are called from the game loop.
+ *
+ */
 var Overlay = function () {};
 
-// call render() to show it
+/* Overlay.render()
+ *
+ * Draw menu screens or other information on the game field, depending on the
+ * current game state.
+ */
 Overlay.prototype.render = function () {
     switch (game.state) {
         case 'pause':
@@ -207,7 +220,11 @@ Overlay.prototype.render = function () {
     }
 };
 
-// 
+/* Overlay._dim()
+ *
+ * Draw a semitransparent white rectangle over the game field. Used for all full-screen
+ * menu screens.
+ */
 Overlay.prototype._dim = function () {
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = '#fff';
@@ -215,6 +232,11 @@ Overlay.prototype._dim = function () {
     ctx.globalAlpha = 1;
 };
 
+/* Overlay._drawText()
+ *
+ * Helper method to draw short text to a specific position, called by
+ * the other _draw* methods
+ */
 Overlay.prototype._drawText = function (content, x, y, alignment) {
     ctx.save();
     ctx.fillStyle = '#00f';
@@ -224,9 +246,11 @@ Overlay.prototype._drawText = function (content, x, y, alignment) {
     ctx.restore();
 }
 
-// draws the status line at the bottom of the screen, showing
-// the current score and remaining lives. All pixel values
-// hard-coded and found by trial & error
+/* Overlay._drawStatus()
+ *
+ * Draws the status line at the bottom of the screen, showing the current score and 
+ * remaining lives.
+ */
 Overlay.prototype._drawStatus = function () {
     var status = "L:";
     status += game.lives;
@@ -245,22 +269,52 @@ Overlay.prototype._drawStatus = function () {
 
 };
 
-// draws a menu screen
+/* Overlay._drawMenu()
+ *
+ * Draws the initial menu screen
+ */
 Overlay.prototype._drawMenu = function () {
     var menu = "<enter> to start, <h> for highscores";
     this._drawText(menu, 250, 250, 'center');
 };
 
-// draws highscores screen
+/* Overlay._drawHighscores()
+ *
+ * Draws the highscore screen
+ */
 Overlay.prototype._drawHighscores = function () {
     var help = "<enter> to return to menu";
 
     this._drawText(help, 250, 250, 'center');
-
-    console.log(game.highscores);
+    this._drawHighscoreList();
 };
 
-// draws "game over" screen
+
+/* Overlay._drawHighscoreList()
+ *
+ * Draws the actual highscore list
+ */
+ Overlay.prototype._drawHighscoreList = function () {
+    var line_height = 24;
+    var y = 250 + 2 * line_height;
+    var line = '';
+
+    for (var i = 0; i < NUM_HIGHSCORES; i++) {
+        line = i < 9 ? '0' : ''; // leading zero for 1-9
+        line +=(i + 1) + ": ";
+        line += game.highscore_list[i] || '-';
+        if (game.highscore_list[i] === game.current_score) {
+            line += ' < your last score!';
+        }
+        this._drawText(line, 100, y, 'left');
+        y += line_height;
+    }
+};
+
+/* Overlay._drawGameover()
+ *
+ * Draws the gameover screen
+ */
 Overlay.prototype._drawGameover = function () {
     var help = "GAME OVER (<enter> to return to menu)";
 
@@ -268,9 +322,13 @@ Overlay.prototype._drawGameover = function () {
     ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(help, 250, 250);
+
+    this._drawHighscoreList();
 };
 
-// Enemies our player must avoid
+/* Enemy == object to model the enemies the player must avoid
+ *
+ */
 var Enemy = function(row, speed) {
     // Variables applied to each of our instances go here,
     // we've provided one for you to get started
