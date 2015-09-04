@@ -73,10 +73,10 @@ Game.prototype.handleInput = function (input) {
         case 'menu':
             switch (input) {
                 case 'enter':
-                    this._start();
+                    this.start();
                     break;
                 case 'h':
-                    this._highscores();
+                    this.highscores();
                     break;
                 default:
                     console.log('(game) invalid input: ' + input);
@@ -86,7 +86,7 @@ Game.prototype.handleInput = function (input) {
         case 'gameover':
             switch (input) {
                 case 'enter':
-                    this._menu();
+                    this.menu();
                     break;
                 default:
                     console.log('(game) invalid input: ' + input);
@@ -95,7 +95,7 @@ Game.prototype.handleInput = function (input) {
         case 'pause':
             switch (input) {
                 case 'space':
-                    this._resume();
+                    this.resume();
                     break;
                 default:
                     console.log ('(game) invalid input: ' +  input);
@@ -109,9 +109,17 @@ Game.prototype.handleInput = function (input) {
     }
 };
 
-// wrapper methods for state transitions
 
-Game.prototype._start = function () {
+/* Wrapper methods to handle state transitions:
+ * Game.start()
+ * Game.pause()
+ * Game.resume()
+ * Game.gameover()
+ * Game.menu()
+ * Game.highscores()
+ *
+ */
+Game.prototype.start = function () {
     // reset lives
     game.lives = INITIAL_LIVES;
     // reset score
@@ -120,15 +128,15 @@ Game.prototype._start = function () {
     this.state = 'run';
 };
 
-Game.prototype._pause = function () {
+Game.prototype.pause = function () {
     this.state = 'pause';
 };
 
-Game.prototype._resume = function () {
+Game.prototype.resume = function () {
     this.state = 'run';
 };
 
-Game.prototype._gameover = function () {
+Game.prototype.gameover = function () {
     var ghl = game.highscores.length;
     // save score to highscores, if necessary
     // score is a highscore if:
@@ -162,11 +170,11 @@ Game.prototype._gameover = function () {
     this.state = 'gameover';
 };
 
-Game.prototype._menu = function () {
+Game.prototype.menu = function () {
     this.state = 'menu';
 };
 
-Game.prototype._highscores = function () {
+Game.prototype.highscores = function () {
     this.state = 'highscores'
 };
 
@@ -195,7 +203,7 @@ Overlay.prototype.render = function () {
         case 'gameover':
             this._dim();
             this._drawGameover();
-            this._drawHighscores();
+
     }
 };
 
@@ -375,7 +383,7 @@ Player.prototype._fail = function () {
     game.lives--;
     this._reset();
     if (game.lives < 0) {
-        game._gameover();
+        game.gameover();
     }
 };
 
@@ -409,7 +417,7 @@ Player.prototype.handleInput = function (input) {
         // space: pause the game
         case 'space':
             // resume is handled by game.handleInput()
-            game._pause();
+            game.pause();
             break;
 
         // only for debugging, console.log() is fine
@@ -418,14 +426,29 @@ Player.prototype.handleInput = function (input) {
     }
 };
 
-// Extra items that give lives and points
-// Common functionality for Hearts and Stars:
-// - have a position on the road rows
-// - appear and disappear at random times
-// - reset to new location and display / hide timeout
-
+/* Extra -- superclass for objects that give extra lives and points
+ *
+ * During game setup, a fixed number of extra items is created. They
+ * appear and disappear at random intervals and locations. When an
+ * item is picked up, is it reset immediately and the points awarded.
+ * 
+ * Picking up extra items is handled by the Player class, which then calls
+ * their yield() method.
+ *
+ * Common functionality for all extra items:
+ * - have a position on the road rows
+ * - appear and disappear at random times
+ * - reset to new location and display / hide timeout
+ *
+ * Functionality implemented in the subclasses:
+ *
+ * - have a specific sprite for each subclass
+ * - yield(): award bonus lives / points
+ * 
+ */
 var Extra = function () {
-    this._init();
+    // initialize to random values
+    this._reset();
     // if no sprite has been set, this constructor has not been called by
     // a subclass constructor.
     // In this case, warn and set a default sprite.
@@ -435,6 +458,11 @@ var Extra = function () {
     }
 };
 
+/* Extra.update()
+ *
+ * check whether the timeout has been reached and toggle between
+ * active and inactive state
+ */
 Extra.prototype.update = function (dt) {
     if (game.state === 'run') {
         this.timeout -= dt * 1000;
@@ -451,13 +479,19 @@ Extra.prototype.update = function (dt) {
     }
 };
 
+/* Extra.render()
+ */
 Extra.prototype.render = function () {
     if (this.isActive) {
         ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
     }
 };
 
-Extra.prototype._init = function () {
+/* Extra._reset()
+ *
+ * Resets the extra item to a random position and timeout
+ */
+Extra.prototype._reset = function () {
     // extras only appear on road rows, hardcoded for to rows 1-3
     this.row = Math.floor(Math.random() * 3) + 1;
     this.col = Math.floor(Math.random() * FIELD_COLS);
@@ -473,22 +507,26 @@ Extra.prototype._init = function () {
     this._resetTimeout();
 };
 
-Extra.prototype._reset = function () {
-    this._init();
-}
-
+/* Extra._resetTimeout()
+ * 
+ * Reset the timeout to when the extra will next appear/disappear
+ */
 Extra.prototype._resetTimeout = function () {
     // timeout before the extra appears or disappears
     // a random value between 3000 and 7999
     this.timeout = Math.floor(Math.random() * 5000) + 3;
 };
 
-
+/* Extra.yield()
+ *
+ * Award bonus points and lives, functionality only implemented in subclasses
+ */
 Extra.prototype.yield = function () {
     console.log("Not implemented in superclass Extra! Only use subclasses Heart or Star.")
 };
 
-// a heart gives one extra life when picked up
+/* Heart -- object for extra item awarding one extra life when picked up
+ */
 var Heart = function () {
     this.sprite = HEART_SPRITE;
     Extra.call(this);
@@ -497,13 +535,18 @@ var Heart = function () {
 Heart.prototype = Object.create(Extra.prototype);
 Heart.prototype.constructor = Heart;
 
-// apply bonus and reset heart
+
+/* Heart.yield()
+ *
+ * Award extra life and reset Heart
+ */
 Heart.prototype.yield = function () {
     game.lives++;
     this._reset();
 };
 
-// a Star gives POINTS_PER_STAR extra points when picked up
+/* Star -- object for extra item awarding extra points when picked up
+ */
 var Star = function () {
     this.sprite = STAR_SPRITE;
     Extra.call(this);
@@ -512,15 +555,16 @@ var Star = function () {
 Star.prototype = Object.create(Extra.prototype);
 Star.prototype.constructor = Star;
 
-// apply bonus and reset star
+/* Star.yield()
+ *
+ * Award extra points and reset Heart
+ */
 Star.prototype.yield = function () {
     game.current_score += POINTS_PER_STAR;
     this._reset();
 };
 
-// Now instantiate your objects.
-// Place all enemy objects in an array called allEnemies
-// Place the player object in a variable called player
+// Set up all game ojects
 var allEnemies = [
     new Enemy(1, 100 + Math.floor(Math.random() * 300)),
     new Enemy(2, 100 + Math.floor(Math.random() * 300)), 
@@ -533,8 +577,6 @@ var player = new Player();
 var overlay = new Overlay();
 var game = new Game();
 
-// This listens for key presses and sends the keys to your
-// Player.handleInput() method.
 // Using the Kibo library provides a snappier response to keyboard events
 // than registering a plain event listener.
 
