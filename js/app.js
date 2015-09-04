@@ -4,14 +4,25 @@
  */
 var BLOCK_WIDTH = 101,
     BLOCK_HEIGHT = 83,
-    PLAYER_OFFSET_X = 0,    
+
+    PLAYER_SPRITE = 'images/char-cat-girl.png';
+    PLAYER_OFFSET_X = 0;
     PLAYER_OFFSET_Y = -35,
+
+    ENEMY_SPRITE = 'images/enemy-bug.png';
     ENEMY_OFFSET_X = 0;
     ENEMY_OFFSET_Y = -22;
+
+    HEART_SPRITE = 'images/Heart.png';
+    STAR_SPRITE = 'images/Star.png';
+    EXTRA_SPRITE = 'images/Rock.png';
     EXTRA_OFFSET_X = 0;
     EXTRA_OFFSET_Y = -10;
-    FIELD_COLS = 5, // also hard-coded in engine.js
+
+    // also hard-coded in engine.js
+    FIELD_COLS = 5, 
     FIELD_ROWS = 6,
+
     INITIAL_LIVES = 1,
     POINTS_PER_CROSSING = 1,
     POINTS_PER_STAR = 3;
@@ -102,7 +113,9 @@ Game.prototype.handleInput = function (input) {
 
 Game.prototype._start = function () {
     // reset lives
+    game.lives = INITIAL_LIVES;
     // reset score
+    game.current_score = 0;
     // set state
     this.state = 'run';
 };
@@ -116,7 +129,35 @@ Game.prototype._resume = function () {
 };
 
 Game.prototype._gameover = function () {
-    // if highscore, save it
+    var ghl = game.highscores.length;
+    // save score to highscores, if necessary
+    // score is a highscore if:
+    // either highscore list isn't filled yet
+    if (ghl < NUM_HIGHSCORES ||
+        // or score is higher than the lowest score in highscores
+        game.current_score > game.highscores[ghl - 1]) {
+
+        // push to highscores. these are now unsorted.
+        game.highscores.push(game.current_score);
+
+        // sort in descending order
+        game.highscores.sort(function (a, b) {
+            return b - a;
+        });
+
+        // remove duplicates from array, by...
+        tmp = game.highscores.filter(function (item, pos) {
+            // ...only including the first occurence of each item
+            return game.highscores.indexOf(item) == pos;
+        });
+
+        game.highscores = tmp; 
+        ghl = game.highscores.length;
+        if (ghl > NUM_HIGHSCORES) {
+            game.highscores = game.highscores.slice(0, NUM_HIGHSCORES);
+        }
+    }
+    
     // set state
     this.state = 'gameover';
 };
@@ -128,9 +169,6 @@ Game.prototype._menu = function () {
 Game.prototype._highscores = function () {
     this.state = 'highscores'
 };
-
-
-
 
 
 // Overlay for info areas and menus
@@ -157,6 +195,7 @@ Overlay.prototype.render = function () {
         case 'gameover':
             this._dim();
             this._drawGameover();
+            this._drawHighscores();
     }
 };
 
@@ -167,6 +206,15 @@ Overlay.prototype._dim = function () {
     ctx.fillRect(0, 0, 505, 606);
     ctx.globalAlpha = 1;
 };
+
+Overlay.prototype._drawText = function (content, x, y, alignment) {
+    ctx.save();
+    ctx.fillStyle = '#00f';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = alignment;
+    ctx.fillText(content, x, y);
+    ctx.restore();
+}
 
 // draws the status line at the bottom of the screen, showing
 // the current score and remaining lives. All pixel values
@@ -184,32 +232,24 @@ Overlay.prototype._drawStatus = function () {
     ctx.fillRect(0, 560, 505, 26);
     ctx.globalAlpha = 1;
 
-    ctx.fillStyle = '#00f';
-    ctx.font = 'bold 16px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(status, 20, 578);
-    ctx.fillText(help, 330, 578);
+    this._drawText(status, 20, 578, 'left');
+    this._drawText(help, 330, 578, 'left');
 
 };
 
 // draws a menu screen
 Overlay.prototype._drawMenu = function () {
     var menu = "<enter> to start, <h> for highscores";
-
-    ctx.fillStyle = '#00f';
-    ctx.font = 'bold 18px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(menu, 250, 250);
+    this._drawText(menu, 250, 250, 'center');
 };
 
 // draws highscores screen
 Overlay.prototype._drawHighscores = function () {
     var help = "<enter> to return to menu";
 
-    ctx.fillStyle = '#00f';
-    ctx.font = 'bold 18px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(help, 250, 250);
+    this._drawText(help, 250, 250, 'center');
+
+    console.log(game.highscores);
 };
 
 // draws "game over" screen
@@ -229,7 +269,7 @@ var Enemy = function(row, speed) {
 
     // The image/sprite for our enemies, this uses
     // a helper we've provided to easily load images
-    this.sprite = 'images/enemy-bug.png';
+    this.sprite = ENEMY_SPRITE;
 
     // remember the row
     this.row = row;
@@ -275,7 +315,7 @@ Enemy.prototype._reset = function () {
 
 var Player = function () {
     // image hard-coded for now
-    this.sprite = 'images/char-cat-girl.png';
+    this.sprite = PLAYER_SPRITE;
 
     // initial placement on random column and start row
     this.col = Math.floor(Math.random() * FIELD_COLS);
@@ -335,19 +375,7 @@ Player.prototype._fail = function () {
     game.lives--;
     this._reset();
     if (game.lives < 0) {
-        game.state = 'gameover';
-        console.log("current_score: " + game.current_score);
-        if (game.highscores.length < NUM_HIGHSCORES ||
-            game.current_score > game.highscores[game.highscores.length - 1]) {
-            game.highscores.push(game.current_score);
-            game.highscores = game.highscores.sort();
-            if (game.highscores.length > NUM_HIGHSCORES) {
-                game.highscores = game.highscores.slice(0, NUM_HIGHSCORES);
-            }
-        }
-        console.log(game.highscores);
-        game.current_score = 0;
-        game.lives = INITIAL_LIVES;
+        game._gameover();
     }
 };
 
@@ -403,7 +431,7 @@ var Extra = function () {
     // In this case, warn and set a default sprite.
     if (!this.sprite) {
         console.log ("Don't use Extra directly, only use subclasses Heart and Star!")
-        this.sprite = 'images/Rock.png';
+        this.sprite = EXTRA_SPRITE;
     }
 };
 
@@ -462,7 +490,7 @@ Extra.prototype.yield = function () {
 
 // a heart gives one extra life when picked up
 var Heart = function () {
-    this.sprite = 'images/Heart.png';
+    this.sprite = HEART_SPRITE;
     Extra.call(this);
 };
 // set up inheritance
@@ -477,7 +505,7 @@ Heart.prototype.yield = function () {
 
 // a Star gives POINTS_PER_STAR extra points when picked up
 var Star = function () {
-    this.sprite = 'images/Star.png';
+    this.sprite = STAR_SPRITE;
     Extra.call(this);
 };
 // set up inheritance
