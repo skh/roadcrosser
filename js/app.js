@@ -328,35 +328,34 @@ Overlay.prototype._drawGameover = function () {
 
 /* Enemy == object to model the enemies the player must avoid
  *
+ * Enemies are created off-screen with a random speed. They always walk
+ * from the left to the right edge of the game field. When they leave the
+ * screen, they are reset to a new speed, but stau in the same row.
  */
-var Enemy = function(row, speed) {
-    // Variables applied to each of our instances go here,
-    // we've provided one for you to get started
-
-    // The image/sprite for our enemies, this uses
-    // a helper we've provided to easily load images
+var Enemy = function(row) {
     this.sprite = ENEMY_SPRITE;
-
-    // remember the row
+    // remember the row, makes collision detection easier later
     this.row = row;
 
-    // compute actual pixel coordinates
-    // enemies are created off-screen
-    this.x = ENEMY_OFFSET_X - BLOCK_WIDTH;
+    // y-coordinate will never change
     this.y = ENEMY_OFFSET_Y + BLOCK_HEIGHT * row;
-    this.speed = speed;
-    console.log("enemy created with speed " + speed);
+
+    // initialize with random speed at the beginning of the line
+    this._reset();
 }
 
-// Update the enemy's position, required method for game
-// Parameter: dt, a time delta between ticks
+/* Enemy.update()
+ *
+ * Update the enemy's position. 'dt' is the time delta between ticks.
+ * Called from the main game loop.
+ */
 Enemy.prototype.update = function(dt) {
-
+    // if the game is paused or a menu screen is shown, enemies stand still
     if (game.state === 'run') {
         // ensures the game runs at the same speed on fast and slow computers
         this.x += this.speed * dt;
 
-        // if the bug runs off the right edge, reset it
+        // if the enemy runs off the right edge, reset it
         if (this.x >= BLOCK_WIDTH * FIELD_COLS) {
             this._reset();
         }
@@ -364,21 +363,32 @@ Enemy.prototype.update = function(dt) {
 
 }
 
-// Draw the enemy on the screen, required method for game
+/* Enemy.render()
+ *
+ * Draw the enemy on the screen, called from the main game loop
+ */
 Enemy.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 }
 
-// Reset the enemy to the beginning of the line.
+/* Enemy._reset()
+ *
+ * Reset the enemy to the beginning of the line with a new random speed
+ */
 Enemy.prototype._reset = function () {
     this.x = ENEMY_OFFSET_X - BLOCK_WIDTH;
     this.speed = 100 + Math.floor(Math.random() * 300);
 }
 
-// Now write your own player class
-// This class requires an update(), render() and
-// a handleInput() method.
-
+/* Player -- object to model the player
+ *
+ * Initial position is a random block on the start row
+ * While the game is in 'run' state, all keyboard events are passed through
+ * to the Player object.
+ *
+ * The Player object is responsible to detect collisions with enemies and
+ * picking up of extra items.
+ */
 var Player = function () {
     // image hard-coded for now
     this.sprite = PLAYER_SPRITE;
@@ -389,8 +399,13 @@ var Player = function () {
 
 };
 
-// Update the player's position, required method for game
-// Parameter: dt, a time delta between ticks
+/* Player.update()
+ *
+ * Update the player's position. 'dt' is the time delta between ticks.
+ * Called from the main game loop.
+ *
+ * All checks for collisions and extra items happen in this method
+ */
 Player.prototype.update = function(dt) {
 
     // calculate actual coordinates from col and row
@@ -425,18 +440,28 @@ Player.prototype.update = function(dt) {
 
 };
 
-// Draw the player on the screen, required method for game
+/* Player.render()
+ *
+ * Draw the player on the screen, called from the main game loop
+ */
 Player.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
 };
 
-// reset the player to random column and start row
+/* Player._reset()
+ *
+ * Reset the player to a random block in the start row
+ */
 Player.prototype._reset = function() {
     this.col = Math.floor(Math.random() * FIELD_COLS);
     this.row = FIELD_ROWS - 1;
 };
 
-// called when run over by a bug
+/* Player._fail()
+ *
+ * Called after a collision with an enemy. Substract one life,
+ * end game when no lives are left or reset player to start row.
+ */
 Player.prototype._fail = function () {
     game.lives--;
     this._reset();
@@ -445,13 +470,23 @@ Player.prototype._fail = function () {
     }
 };
 
-// called when water is reached
+/* Player._succeed()
+ *
+ * Called after the water row has been reached. Increase score,
+ * reset player to start row
+ */
 Player.prototype._succeed = function () {
     game.current_score += POINTS_PER_CROSSING;
     this._reset();
 };
 
-// handle input
+/* Player.handleInput()
+ *
+ * Called by Game.handleInput() when the game is in the 'run' state.
+ * 
+ * Moves the player on the game field, pauses the game when <space>
+ * is pressed.
+ */
 Player.prototype.handleInput = function (input) {
     switch (input) {
         // up, down, right, left: step there
@@ -478,7 +513,6 @@ Player.prototype.handleInput = function (input) {
             game.pause();
             break;
 
-        // only for debugging, console.log() is fine
         default:
             console.log("(player) invalid input: " + input);
     }
@@ -624,7 +658,7 @@ Star.prototype.yield = function () {
 
 // Set up all game ojects
 var allEnemies = [
-    new Enemy(1, 100 + Math.floor(Math.random() * 300)),
+    new Enemy(1)),
     new Enemy(2, 100 + Math.floor(Math.random() * 300)), 
     new Enemy(3, 100 + Math.floor(Math.random() * 300))];
 var allExtras = [
