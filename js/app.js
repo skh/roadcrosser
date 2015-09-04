@@ -658,9 +658,9 @@ Star.prototype.yield = function () {
 
 // Set up all game ojects
 var allEnemies = [
-    new Enemy(1)),
-    new Enemy(2, 100 + Math.floor(Math.random() * 300)), 
-    new Enemy(3, 100 + Math.floor(Math.random() * 300))];
+    new Enemy(1),
+    new Enemy(2), 
+    new Enemy(3)];
 var allExtras = [
     new Heart(),
     new Star()
