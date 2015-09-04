@@ -1,4 +1,4 @@
-/* Constants
+/* Constants to control behaviour and display of the game
  * All *_OFFSET_* values are used to move item sprites into subjectively better-looking
  * places
  */
@@ -13,11 +13,23 @@ var BLOCK_WIDTH = 101,
     FIELD_COLS = 5, // also hard-coded in engine.js
     FIELD_ROWS = 6,
     INITIAL_LIVES = 1,
-    POINTS_PER_CROSSING = 50,
-    POINTS_PER_STAR = 50;
+    POINTS_PER_CROSSING = 1,
+    POINTS_PER_STAR = 3;
     NUM_HIGHSCORES = 10;
 
-// Game: hold game state
+/* Game -- object to hold game metadata and manage game state
+ * 
+ * The game can be in the following states:
+ *
+ * menu      : Show the main menu screen
+ * highscores: Show highscores
+ * run       : Run the game
+ * pause     : Pause the running game
+ * gameover  : Show the gameover screen and high scores
+ * 
+ * The user interacts with the game only through keyboard commands
+ */
+
 var Game = function () {
     this.state = 'menu';
     this.lives = INITIAL_LIVES;
@@ -25,16 +37,35 @@ var Game = function () {
     this.highscores = [];
 };
 
-// handle input
+/* Game.handleInput() -- handle keyboard input depending on current game state
+ *
+ * If the game is in the 'run' state, keyboard input is passed
+ * to Player.handleInput().
+ * In all other cases, keyboard input is handled by this method
+ * directly. All state transitions happen in wrapper methods. Some of them
+ * perform additional actions necessary when entering the new state.
+ *
+ * The following state transitions are used
+ *
+ * start     : 'menu' -> 'run'
+ * pause     : 'run' -> 'pause'
+ * resume    : 'pause' -> 'run'
+ * gameover  : 'run' -> 'gameover'
+ * menu      : 'gameover' -> 'menu'
+ *             'highscores' -> 'menu'
+ * highscores: 'menu' -> 'highscores'
+ *
+ */
+
 Game.prototype.handleInput = function (input) {
-    switch (game.state) {
+    switch (this.state) {
         case 'menu':
             switch (input) {
                 case 'enter':
-                    game.state = 'run';
+                    this._start();
                     break;
                 case 'h':
-                    game.state = 'highscores';
+                    this._highscores();
                     break;
                 default:
                     console.log('(game) invalid input: ' + input);
@@ -44,7 +75,7 @@ Game.prototype.handleInput = function (input) {
         case 'gameover':
             switch (input) {
                 case 'enter':
-                    game.state = 'menu';
+                    this._menu();
                     break;
                 default:
                     console.log('(game) invalid input: ' + input);
@@ -53,7 +84,7 @@ Game.prototype.handleInput = function (input) {
         case 'pause':
             switch (input) {
                 case 'space':
-                    game.state = 'run';
+                    this._resume();
                     break;
                 default:
                     console.log ('(game) invalid input: ' +  input);
@@ -66,6 +97,41 @@ Game.prototype.handleInput = function (input) {
             break;
     }
 };
+
+// wrapper methods for state transitions
+
+Game.prototype._start = function () {
+    // reset lives
+    // reset score
+    // set state
+    this.state = 'run';
+};
+
+Game.prototype._pause = function () {
+    this.state = 'pause';
+};
+
+Game.prototype._resume = function () {
+    this.state = 'run';
+};
+
+Game.prototype._gameover = function () {
+    // if highscore, save it
+    // set state
+    this.state = 'gameover';
+};
+
+Game.prototype._menu = function () {
+    this.state = 'menu';
+};
+
+Game.prototype._highscores = function () {
+    this.state = 'highscores'
+};
+
+
+
+
 
 // Overlay for info areas and menus
 var Overlay = function () {};
@@ -314,8 +380,8 @@ Player.prototype.handleInput = function (input) {
 
         // space: pause the game
         case 'space':
-            // un-pause is handled by game.handleInput()
-            game.state = 'pause';
+            // resume is handled by game.handleInput()
+            game._pause();
             break;
 
         // only for debugging, console.log() is fine
