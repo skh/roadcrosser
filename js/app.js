@@ -5,19 +5,19 @@
 var BLOCK_WIDTH = 101,
     BLOCK_HEIGHT = 83,
 
-    PLAYER_SPRITE = 'images/char-cat-girl.png';
-    PLAYER_OFFSET_X = 0;
+    PLAYER_SPRITE = 'images/char-cat-girl.png',
+    PLAYER_OFFSET_X = 0,
     PLAYER_OFFSET_Y = -35,
 
-    ENEMY_SPRITE = 'images/enemy-bug.png';
-    ENEMY_OFFSET_X = 0;
-    ENEMY_OFFSET_Y = -22;
+    ENEMY_SPRITE = 'images/enemy-bug.png',
+    ENEMY_OFFSET_X = 0,
+    ENEMY_OFFSET_Y = -22,
 
-    HEART_SPRITE = 'images/Heart.png';
-    STAR_SPRITE = 'images/Star.png';
-    EXTRA_SPRITE = 'images/Rock.png';
-    EXTRA_OFFSET_X = 0;
-    EXTRA_OFFSET_Y = -10;
+    HEART_SPRITE = 'images/Heart.png',
+    STAR_SPRITE = 'images/Star.png',
+    EXTRA_SPRITE = 'images/Rock.png',
+    EXTRA_OFFSET_X = 0,
+    EXTRA_OFFSET_Y = -10,
 
     // also hard-coded in engine.js
     FIELD_COLS = 5, 
@@ -25,7 +25,7 @@ var BLOCK_WIDTH = 101,
 
     INITIAL_LIVES = 1,
     POINTS_PER_CROSSING = 1,
-    POINTS_PER_STAR = 3;
+    POINTS_PER_STAR = 3,
     NUM_HIGHSCORES = 5;
 
 /* Game -- object to hold game metadata and manage game state
@@ -44,7 +44,7 @@ var BLOCK_WIDTH = 101,
 var Game = function () {
     this.state = 'menu';
     this.lives = INITIAL_LIVES;
-    this.current_score = 0,
+    this.current_score = 0;
     this.highscore_list = [];
 };
 
@@ -121,9 +121,9 @@ Game.prototype.handleInput = function (input) {
  */
 Game.prototype.start = function () {
     // reset lives
-    game.lives = INITIAL_LIVES;
+    this.lives = INITIAL_LIVES;
     // reset score
-    game.current_score = 0;
+    this.current_score = 0;
     // set state
     this.state = 'run';
 };
@@ -137,34 +137,34 @@ Game.prototype.resume = function () {
 };
 
 Game.prototype.gameover = function () {
-    var ghl = game.highscore_list.length;
+    var ghl = this.highscore_list.length;
     // save score to highscore_list, if necessary
     // score is a highscore if:
     // score is > 0, and:
     // either highscore list isn't filled yet
-    if (game.current_score > 0 && (ghl < NUM_HIGHSCORES ||
+    if (this.current_score > 0 && (ghl < NUM_HIGHSCORES ||
         // or score is higher than the lowest score in highscore_list
-        game.current_score > game.highscore_list[ghl - 1])) {
+        this.current_score > this.highscore_list[ghl - 1])) {
 
         // push to highscore_list. this is now unsorted.
-        game.highscore_list.push(game.current_score);
+        this.highscore_list.push(this.current_score);
 
         // sort in descending order
-        game.highscore_list.sort(function (a, b) {
+        this.highscore_list.sort(function (a, b) {
             return b - a;
         });
 
         // remove duplicates from array, by...
-        tmp = game.highscore_list.filter(function (item, pos) {
+        tmp = this.highscore_list.filter(function (item, pos) {
             // ...only including the first occurence of each item
-            return game.highscore_list.indexOf(item) == pos;
+            return this.highscore_list.indexOf(item) == pos;
         });
-        game.highscore_list = tmp; 
+        this.highscore_list = tmp; 
 
         // limit highscore list to NUM_HIGHSCORES
-        ghl = game.highscore_list.length;
+        ghl = this.highscore_list.length;
         if (ghl > NUM_HIGHSCORES) {
-            game.highscore_list = game.highscore_list.slice(0, NUM_HIGHSCORES);
+            this.highscore_list = this.highscore_list.slice(0, NUM_HIGHSCORES);
         }
     }
     
@@ -177,7 +177,7 @@ Game.prototype.menu = function () {
 };
 
 Game.prototype.highscores = function () {
-    this.state = 'highscores'
+    this.state = 'highscores';
 };
 
 /* Overlay -- object for drawing functionality
@@ -244,7 +244,7 @@ Overlay.prototype._drawText = function (content, x, y, alignment) {
     ctx.textAlign = alignment;
     ctx.fillText(content, x, y);
     ctx.restore();
-}
+};
 
 /* Overlay._drawStatus()
  *
@@ -342,7 +342,7 @@ var Enemy = function(row) {
 
     // initialize with random speed at the beginning of the line
     this._reset();
-}
+};
 
 /* Enemy.update()
  *
@@ -360,8 +360,7 @@ Enemy.prototype.update = function(dt) {
             this._reset();
         }
     }
-
-}
+};
 
 /* Enemy.render()
  *
@@ -369,7 +368,7 @@ Enemy.prototype.update = function(dt) {
  */
 Enemy.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-}
+};
 
 /* Enemy._reset()
  *
@@ -378,7 +377,7 @@ Enemy.prototype.render = function() {
 Enemy.prototype._reset = function () {
     this.x = ENEMY_OFFSET_X - BLOCK_WIDTH;
     this.speed = 100 + Math.floor(Math.random() * 300);
-}
+};
 
 /* Player -- object to model the player
  *
@@ -396,7 +395,6 @@ var Player = function () {
     // initial placement on random column and start row
     this.col = Math.floor(Math.random() * FIELD_COLS);
     this.row = FIELD_ROWS - 1;
-
 };
 
 /* Player.update()
@@ -418,12 +416,12 @@ Player.prototype.update = function(dt) {
     }
 
     // collision with any enemy?
-    for (var e = 0; e < allEnemies.length; e++) {
+    for (var en = 0; en < allEnemies.length; en++) {
         // same row?
-        var same_row = this.row == allEnemies[e].row;
+        var same_row = this.row == allEnemies[en].row;
         // overlap?
         var overlap =
-            (Math.abs(this.x - allEnemies[e].x)) < 50;
+            (Math.abs(this.x - allEnemies[en].x)) < 50;
         if (same_row && overlap) {
             this._fail(); // lose & start over
             break;
@@ -431,13 +429,12 @@ Player.prototype.update = function(dt) {
     }
 
     // picked up any extra?
-    for (var e = 0; e < allExtras.length; e++) {
-        if (allExtras[e].row === this.row &&
-            allExtras[e].col === this.col) {
-            allExtras[e].yield();
+    for (var ex = 0; ex < allExtras.length; ex++) {
+        if (allExtras[ex].row === this.row &&
+            allExtras[ex].col === this.col) {
+            allExtras[ex].yield();
         }
     }
-
 };
 
 /* Player.render()
@@ -545,7 +542,8 @@ var Extra = function () {
     // a subclass constructor.
     // In this case, warn and set a default sprite.
     if (!this.sprite) {
-        console.log ("Don't use Extra directly, only use subclasses Heart and Star!")
+        console.log ("Don't use Extra directly, " +
+                     "only use subclasses Heart and Star!");
         this.sprite = EXTRA_SPRITE;
     }
 };
@@ -590,7 +588,7 @@ Extra.prototype._reset = function () {
 
     // calculate actual pixel coordinates
     this.x = EXTRA_OFFSET_X + (BLOCK_WIDTH * this.col);
-    this.y = EXTRA_OFFSET_Y + (BLOCK_HEIGHT * this.row);;
+    this.y = EXTRA_OFFSET_Y + (BLOCK_HEIGHT * this.row);
     
     // state
     this.isActive = false;
@@ -614,7 +612,8 @@ Extra.prototype._resetTimeout = function () {
  * Award bonus points and lives, functionality only implemented in subclasses
  */
 Extra.prototype.yield = function () {
-    console.log("Not implemented in superclass Extra! Only use subclasses Heart or Star.")
+    console.log("Not implemented in superclass Extra! " +
+                "Only use subclasses Heart or Star.");
 };
 
 /* Heart -- object for extra item awarding one extra life when picked up
