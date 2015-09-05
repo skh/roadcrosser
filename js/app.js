@@ -277,7 +277,7 @@ Overlay.prototype._drawStatus = function () {
 Overlay.prototype._drawMenu = function () {
     var line1 = "<enter> to start";
     var line2= "use the arrow keys for playing";
-    var line3 = "<h> to view highscores"
+    var line3 = "<h> to view highscores";
     this._drawText(line1, 250, 250, 'center');
     this._drawText(line2, 250, 280, 'center');
     this._drawText(line3, 250, 310, 'center');
