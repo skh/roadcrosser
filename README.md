@@ -11,6 +11,8 @@ To play
   `$ python -m SimpleHTTPServer`
   or use any other way to serve the files through a local web server
 - point your browser at `http://localhost:8000` (or whatever port you used)
+- follow the on-screen instructions to play
+- have a lot of fun ;-)
 
 The game is also available on
 - http://skh.github.io/roadcrosser

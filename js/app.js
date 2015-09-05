@@ -137,6 +137,7 @@ Game.prototype.resume = function () {
 };
 
 Game.prototype.gameover = function () {
+
     var ghl = this.highscore_list.length;
     // save score to highscore_list, if necessary
     // score is a highscore if:
@@ -146,7 +147,7 @@ Game.prototype.gameover = function () {
         // or score is higher than the lowest score in highscore_list
         this.current_score > this.highscore_list[ghl - 1])) {
 
-        // push to highscore_list. this is now unsorted.
+        // push to highscore_list. list is now unsorted.
         this.highscore_list.push(this.current_score);
 
         // sort in descending order
@@ -158,7 +159,7 @@ Game.prototype.gameover = function () {
         tmp = this.highscore_list.filter(function (item, pos) {
             // ...only including the first occurence of each item
             return this.highscore_list.indexOf(item) == pos;
-        });
+        }, this);
         this.highscore_list = tmp; 
 
         // limit highscore list to NUM_HIGHSCORES
@@ -274,8 +275,12 @@ Overlay.prototype._drawStatus = function () {
  * Draws the initial menu screen
  */
 Overlay.prototype._drawMenu = function () {
-    var menu = "<enter> to start, <h> for highscores";
-    this._drawText(menu, 250, 250, 'center');
+    var line1 = "<enter> to start";
+    var line2= "use the arrow keys for playing";
+    var line3 = "<h> to view highscores"
+    this._drawText(line1, 250, 250, 'center');
+    this._drawText(line2, 250, 280, 'center');
+    this._drawText(line3, 250, 310, 'center');
 };
 
 /* Overlay._drawHighscores()
@@ -318,11 +323,7 @@ Overlay.prototype._drawHighscores = function () {
 Overlay.prototype._drawGameover = function () {
     var help = "GAME OVER (<enter> to return to menu)";
 
-    ctx.fillStyle = '#00f';
-    ctx.font = 'bold 18px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(help, 250, 250);
-
+    this._drawText(help, 250, 250, 'center');
     this._drawHighscoreList();
 };
 
